@@ -1,461 +1,571 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión Documental - FedEx</title>
-    <style>
-        :root {
-            --fedex-purple: #4D148C;
-            --fedex-orange: #FF6600;
-            --bg-color: #F3F4F6;
-            --sidebar-bg: #FFFFFF;
-            --text-main: #333333;
-            --text-muted: #6B7280;
-            --border-color: #E5E7EB;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FedEx - Portal de Gestión Documental</title>
+  
+  <!-- Firebase SDKs (Compatibilidad Web) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        }
+  <!-- Google Fonts & FontAwesome Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-        }
+  <style>
+    :root {
+      --fedex-purple: #4D148C;
+      --fedex-orange: #FF6600;
+      --fedex-dark: #222222;
+      --fedex-grey: #F4F5F7;
+      --fedex-border: #E0E0E0;
+    }
 
-        /* Top Header */
-        .header {
-            background-color: var(--fedex-purple);
-            color: white;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            z-index: 10;
-        }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Roboto', sans-serif;
+    }
 
-        .header h1 {
-            font-size: 1.2rem;
-            font-weight: 500;
-        }
+    body {
+      background-color: var(--fedex-grey);
+      color: var(--fedex-dark);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
 
-        /* Layout */
-        .app-container {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-        }
+    /* Navbar */
+    header {
+      background-color: var(--fedex-purple);
+      color: white;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    }
 
-        /* Sidebar */
-        .sidebar {
-            width: 280px;
-            background-color: var(--sidebar-bg);
-            border-right: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-        }
+    .logo {
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: -1px;
+    }
 
-        .sidebar-header {
-            padding: 15px;
-            background-color: #f9fafb;
-            border-bottom: 1px solid var(--border-color);
-            font-weight: bold;
-            color: var(--fedex-purple);
-        }
+    .logo span {
+      color: var(--fedex-orange);
+    }
 
-        .folder-group {
-            margin-bottom: 5px;
-        }
+    .sub-title {
+      font-size: 14px;
+      font-weight: 400;
+      opacity: 0.9;
+    }
 
-        .folder-title {
-            padding: 12px 15px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            font-weight: 600;
-            transition: background 0.2s;
-        }
+    /* Container */
+    .main-container {
+      max-width: 1100px;
+      margin: 30px auto;
+      padding: 0 20px;
+      width: 100%;
+      flex: 1;
+    }
 
-        .folder-title:hover {
-            background-color: #f3f4f6;
-        }
+    /* Upload Card */
+    .upload-card {
+      background: white;
+      border-top: 5px solid var(--fedex-orange);
+      border-radius: 8px;
+      padding: 25px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin-bottom: 30px;
+    }
 
-        .folder-title::before {
-            content: '📁';
-            margin-right: 10px;
-            font-size: 1.1em;
-        }
+    .upload-card h2 {
+      font-size: 18px;
+      margin-bottom: 15px;
+      color: var(--fedex-purple);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-        .subfolders {
-            display: none;
-            list-style: none;
-            background-color: #fafafa;
-        }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr auto;
+      gap: 15px;
+      align-items: end;
+    }
 
-        .subfolders.active {
-            display: block;
-        }
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
 
-        .subfolder-item {
-            padding: 10px 15px 10px 40px;
-            cursor: pointer;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            border-left: 3px solid transparent;
-            transition: all 0.2s;
-        }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
 
-        .subfolder-item:hover {
-            background-color: #f0f0f0;
-            color: var(--text-main);
-        }
+    .form-group label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #555;
+    }
 
-        .subfolder-item.active {
-            background-color: #fff0e6;
-            color: var(--fedex-orange);
-            border-left: 3px solid var(--fedex-orange);
-            font-weight: 600;
-        }
+    input[type="text"], select, input[type="file"] {
+      padding: 10px 12px;
+      border: 1px solid var(--fedex-border);
+      border-radius: 4px;
+      font-size: 14px;
+      outline: none;
+      background: white;
+    }
 
-        /* Main Content */
-        .main-content {
-            flex: 1;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-        }
+    input[type="text"]:focus, select:focus {
+      border-color: var(--fedex-purple);
+    }
 
-        .toolbar {
-            background-color: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    .btn-upload {
+      background-color: var(--fedex-orange);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      font-weight: 700;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+    }
 
-        .toolbar-actions {
-            display: flex;
-            gap: 10px;
-        }
+    .btn-upload:hover {
+      background-color: #e55c00;
+    }
 
-        .breadcrumb {
-            color: var(--text-muted);
-            font-size: 1rem;
-        }
+    /* Progress bar */
+    .progress-bar-container {
+      width: 100%;
+      background-color: #E0E0E0;
+      border-radius: 4px;
+      height: 8px;
+      margin-top: 15px;
+      overflow: hidden;
+      display: none;
+    }
 
-        .breadcrumb span {
-            color: var(--fedex-orange);
-            font-weight: bold;
-        }
+    .progress-bar {
+      width: 0%;
+      height: 100%;
+      background-color: var(--fedex-purple);
+      transition: width 0.3s;
+    }
 
-        .btn {
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.2s;
-        }
+    /* Documents Section */
+    .docs-section {
+      background: white;
+      border-radius: 8px;
+      padding: 25px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
 
-        .btn-upload {
-            background-color: var(--fedex-orange);
-            color: white;
-        }
+    .docs-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
 
-        .btn-upload:hover {
-            background-color: #e65c00;
-        }
+    .docs-header h2 {
+      font-size: 20px;
+      color: var(--fedex-purple);
+    }
 
-        /* File List & Drag Drop Area */
-        .file-list {
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            flex: 1;
-            min-height: 300px;
-            border: 2px dashed transparent;
-            transition: all 0.2s;
-        }
+    .filter-controls {
+      display: flex;
+      gap: 10px;
+    }
 
-        .file-list.drag-over {
-            border-color: var(--fedex-orange);
-            background-color: #fffaf5;
-        }
+    /* Table */
+    .table-responsive {
+      overflow-x: auto;
+    }
 
-        .file-item {
-            display: flex;
-            align-items: center;
-            padding: 15px 20px;
-            border-bottom: 1px solid var(--border-color);
-            transition: background 0.2s;
-        }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
 
-        .file-item:last-child {
-            border-bottom: none;
-        }
+    th {
+      background-color: #FAF9FC;
+      color: var(--fedex-purple);
+      padding: 12px 15px;
+      font-size: 13px;
+      font-weight: 700;
+      border-bottom: 2px solid var(--fedex-border);
+    }
 
-        .file-item:hover {
-            background-color: #f9fafb;
-        }
+    td {
+      padding: 14px 15px;
+      border-bottom: 1px solid var(--fedex-border);
+      font-size: 14px;
+    }
 
-        .file-icon {
-            font-size: 1.5rem;
-            margin-right: 15px;
-        }
+    tr:hover {
+      background-color: #F9F9FA;
+    }
 
-        .file-details {
-            flex: 1;
-        }
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      background-color: #EFE6F8;
+      color: var(--fedex-purple);
+    }
 
-        .file-name {
-            font-weight: 500;
-            color: var(--fedex-purple);
-            text-decoration: none;
-            margin-bottom: 4px;
-            display: block;
-        }
+    .actions {
+      display: flex;
+      gap: 8px;
+    }
 
-        .file-meta {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
+    .btn-action {
+      padding: 6px 12px;
+      border-radius: 4px;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
 
-        .btn-delete {
-            background: none;
-            border: none;
-            color: #ef4444;
-            cursor: pointer;
-            font-size: 1rem;
-            padding: 5px 10px;
-        }
+    .btn-download {
+      background-color: var(--fedex-purple);
+      color: white;
+    }
 
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-muted);
-        }
+    .btn-download:hover {
+      background-color: #3b0f6d;
+    }
 
-        .empty-state p {
-            margin-top: 10px;
-        }
+    .btn-delete {
+      background-color: #FFF0F0;
+      color: #D32F2F;
+      border: 1px solid #FFCDD2;
+    }
 
-        .cloud-icon {
-            font-size: 4rem;
-            color: #d1d5db;
-        }
-    </style>
+    .btn-delete:hover {
+      background-color: #FFCDD2;
+    }
+
+    .empty-msg {
+      text-align: center;
+      padding: 40px;
+      color: #777;
+    }
+
+    .empty-msg i {
+      font-size: 40px;
+      margin-bottom: 10px;
+      color: #CCC;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 12px;
+      color: #777;
+      margin-top: auto;
+    }
+  </style>
 </head>
 <body>
 
-    <header class="header">
-        <h1>Gestión Documental</h1>
-        <div>Portal Interno</div>
-    </header>
+  <!-- Header estilo FedEx -->
+  <header>
+    <div class="logo">Fed<span>Ex</span></div>
+    <div class="sub-title"><i class="fa-solid fa-folder-open"></i> Portal de Gestión Documental</div>
+  </header>
 
-    <div class="app-container">
-        <!-- Sidebar Navigation -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                Carpetas
-            </div>
-            
-            <!-- Departamento 1: Operaciones -->
-            <div class="folder-group">
-                <div class="folder-title" onclick="toggleFolder('ops')">1. Operaciones</div>
-                <ul class="subfolders active" id="ops">
-                    <li class="subfolder-item active" onclick="selectFolder(this, 'Operaciones', 'Manuales de Puestos')">Manuales de Puestos</li>
-                    <li class="subfolder-item" onclick="selectFolder(this, 'Operaciones', 'Flujos de Procesos')">Flujos de Procesos</li>
-                    <li class="subfolder-item" onclick="selectFolder(this, 'Operaciones', 'Auditorías y Control')">Auditorías y Control</li>
-                </ul>
-            </div>
+  <div class="main-container">
+    
+    <!-- Subir Archivo -->
+    <div class="upload-card">
+      <h2><i class="fa-solid fa-cloud-arrow-up"></i> Cargar Nuevo Documento</h2>
+      <form id="uploadForm" class="form-grid">
+        
+        <div class="form-group">
+          <label for="docCategory">Categoría / Carpeta</label>
+          <select id="docCategory" required>
+            <option value="Manifiestos">Manifiestos</option>
+            <option value="Facturas">Facturas de Envío</option>
+            <option value="Guías">Guías de Rastreo</option>
+            <option value="Aduanas">Documentos de Aduana</option>
+            <option value="General" selected>General</option>
+          </select>
+        </div>
 
-            <!-- Departamento 2: Servicio al Cliente -->
-            <div class="folder-group">
-                <div class="folder-title" onclick="toggleFolder('cx')">2. Servicio al Cliente</div>
-                <ul class="subfolders" id="cx">
-                    <li class="subfolder-item active" onclick="selectFolder(this, 'Operaciones', 'Manuales de Puestos')">Manuales de Puestos</li>
-                    <li class="subfolder-item" onclick="selectFolder(this, 'Operaciones', 'Flujos de Procesos')">Flujos de Procesos</li>
-                    <li class="subfolder-item" onclick="selectFolder(this, 'Operaciones', 'Auditorías y Control')">Auditorías y Control</li>
-                </ul>
-            </div>
-        </aside>
+        <div class="form-group">
+          <label for="docFile">Archivo (PDF, Excel, Word, Imagen)</label>
+          <input type="file" id="docFile" required>
+        </div>
 
-        <!-- Main Content Area -->
-        <main class="main-content">
-            <div class="toolbar">
-                <div class="breadcrumb" id="breadcrumb">
-                    Operaciones > <span>Manuales de Puestos</span>
-                </div>
-                <div class="toolbar-actions">
-                    <button class="btn btn-upload" onclick="triggerFileInput()">↑ Subir Documento</button>
-                    <input type="file" id="file-input" multiple style="display: none;" onchange="handleFileSelect(event)">
-                </div>
-            </div>
+        <div class="form-group">
+          <button type="submit" id="btnSubmit" class="btn-upload">
+            <i class="fa-solid fa-upload"></i> Subir Archivo
+          </button>
+        </div>
 
-            <div class="file-list" id="file-container">
-                <!-- Los archivos dinámicos se renderizan aquí -->
-            </div>
-        </main>
+      </form>
+
+      <div class="progress-bar-container" id="progressContainer">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
     </div>
 
-    <script>
-        // === ALMACENAMIENTO DE DATOS EN MEMORIA ===
-        let currentDept = 'Operaciones';
-        let currentFolder = 'Manuales de Puestos';
+    <!-- Lista de Documentos -->
+    <div class="docs-section">
+      <div class="docs-header">
+        <h2>Documentos Disponibles</h2>
+        <div class="filter-controls">
+          <input type="text" id="searchInput" placeholder="Buscar por nombre..." onkeyup="filterTable()">
+          <select id="filterCategory" onchange="filterTable()">
+            <option value="ALL">Todas las Categorías</option>
+            <option value="Manifiestos">Manifiestos</option>
+            <option value="Facturas">Facturas</option>
+            <option value="Guías">Guías</option>
+            <option value="Aduanas">Aduanas</option>
+            <option value="General">General</option>
+          </select>
+        </div>
+      </div>
 
-        const db = {
-            'Operaciones_Manuales de Puestos': [
-                { name: 'Manual_Operador_Logistico_v2.pdf', date: '2023-10-24', size: '2.4 MB', type: 'PDF', icon: '📄' },
-                { name: 'Matriz_Riesgos_Almacen.xlsx', date: '2023-11-15', size: '1.1 MB', type: 'Excel', icon: '📊' }
-            ]
-        };
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Documento</th>
+              <th>Categoría</th>
+              <th>Tamaño</th>
+              <th>Fecha de Carga</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="docsTableBody">
+            <!-- Los archivos se cargan aquí dinámicamente -->
+          </tbody>
+        </table>
+        <div id="emptyMessage" class="empty-msg" style="display: none;">
+          <i class="fa-solid fa-box-open"></i>
+          <p>No hay documentos registrados actualmente.</p>
+        </div>
+      </div>
+    </div>
 
-        function getStorageKey() {
-            return `${currentDept}_${currentFolder}`;
-        }
+  </div>
 
-        function escapeHtml(str) {
-            return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        }
+  <footer>
+    &copy; FedEx Document Management System - Servidor de almacenamiento dinámico.
+  </footer>
 
-        // === CONTROL DE NAVEGACIÓN ===
-        function toggleFolder(id) {
-            const folder = document.getElementById(id);
-            folder.classList.toggle('active');
-        }
+  <script>
+    // Configuración de tu Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyC6UNvLteqXoBt5Oa89hvXICVrW8_KuYYo",
+      authDomain: "gestion-documental-fedex.firebaseapp.com",
+      projectId: "gestion-documental-fedex",
+      storageBucket: "gestion-documental-fedex.firebasestorage.app",
+      messagingSenderId: "189701238963",
+      appId: "1:189701238963:web:08ed3c8e5235bbdbc240c6",
+      measurementId: "G-8HJSDC6J67"
+    };
 
-        function selectFolder(element, departamento, subcarpeta) {
-            document.querySelectorAll('.subfolder-item').forEach(el => el.classList.remove('active'));
-            element.classList.add('active');
-            
-            currentDept = departamento;
-            currentFolder = subcarpeta;
-            
-            document.getElementById('breadcrumb').innerHTML = `${departamento} > <span>${subcarpeta}</span>`;
-            renderFiles();
-        }
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const storage = firebase.storage();
 
-        // === RENDERIZADO DE ARCHIVOS ===
-        function renderFiles() {
-            const container = document.getElementById('file-container');
-            const key = getStorageKey();
-            const files = db[key] || [];
+    // DOM Elements
+    const uploadForm = document.getElementById('uploadForm');
+    const docFileInput = document.getElementById('docFile');
+    const docCategoryInput = document.getElementById('docCategory');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
+    const docsTableBody = document.getElementById('docsTableBody');
+    const emptyMessage = document.getElementById('emptyMessage');
+    const btnSubmit = document.getElementById('btnSubmit');
 
-            if (files.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="cloud-icon">☁️</div>
-                        <p>Arrastra tus archivos de <b>${currentFolder}</b> aquí o haz clic en Subir Documento.</p>
-                        <p style="font-size: 0.85rem; margin-top:5px;">(Formatos recomendados: PDF, XLSX, DOCX)</p>
-                    </div>
-                `;
-                return;
-            }
+    let allDocs = [];
 
-            container.innerHTML = files.map((file, idx) => `
-                <div class="file-item">
-                    <div class="file-icon">${file.icon}</div>
-                    <div class="file-details">
-                        <a href="#" class="file-name">${escapeHtml(file.name)}</a>
-                        <div class="file-meta">Modificado: ${file.date} • ${file.type} • ${file.size}</div>
-                    </div>
-                    <button class="btn-delete" title="Eliminar" onclick="deleteFile(${idx})">🗑️</button>
-                </div>
-            `).join('');
-        }
+    // Formatear tamaño de archivo
+    function formatBytes(bytes, decimals = 2) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const dm = decimals < 0 ? 0 : decimals;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
 
-        function deleteFile(index) {
-            const key = getStorageKey();
-            if (db[key]) {
-                db[key].splice(index, 1);
-                renderFiles();
-            }
-        }
+    // Subir documento a Firebase
+    uploadForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const file = docFileInput.files[0];
+      const category = docCategoryInput.value;
 
-        // === GESTIÓN DE CARGA (BUTTON & DRAG AND DROP) ===
-        function triggerFileInput() {
-            document.getElementById('file-input').click();
-        }
+      if (!file) return;
 
-        function handleFileSelect(event) {
-            addFiles(event.target.files);
-            event.target.value = '';
-        }
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Subiendo...`;
+      progressContainer.style.display = 'block';
 
-        function addFiles(fileList) {
-            const key = getStorageKey();
-            if (!db[key]) db[key] = [];
+      // Crear referencia en Storage
+      const storagePath = `documentos/${Date.now()}_${file.name}`;
+      const storageRef = storage.ref(storagePath);
+      const uploadTask = storageRef.put(file);
 
-            Array.from(fileList).forEach(file => {
-                const ext = file.name.split('.').pop().toLowerCase();
-                let icon = '📄';
-                let type = 'Documento';
-
-                if (['xlsx', 'xls', 'csv'].includes(ext)) { icon = '📊'; type = 'Excel'; }
-                else if (['pdf'].includes(ext)) { icon = '📕'; type = 'PDF'; }
-                else if (['doc', 'docx'].includes(ext)) { icon = '📘'; type = 'Word'; }
-                else if (['png', 'jpg', 'jpeg'].includes(ext)) { icon = '🖼️'; type = 'Imagen'; }
-
-                db[key].push({
-                    name: file.name,
-                    date: new Date().toISOString().split('T')[0],
-                    size: formatFileSize(file.size),
-                    type: type,
-                    icon: icon
-                });
+      uploadTask.on('state_changed', 
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          progressBar.style.width = progress + '%';
+        }, 
+        (error) => {
+          alert('Error al subir el archivo: ' + error.message + '\n\nAsegúrate de haber activado Firebase Storage en modo de prueba.');
+          resetUploadForm();
+        }, 
+        () => {
+          // Obtener URL pública
+          uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+            // Guardar registro en Firestore Database
+            db.collection("documentos").add({
+              name: file.name,
+              category: category,
+              size: file.size,
+              url: downloadURL,
+              storagePath: storagePath,
+              createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => {
+              alert('¡Documento subido correctamente!');
+              resetUploadForm();
+            }).catch(err => {
+              alert('Error al guardar en la base de datos: ' + err.message);
+              resetUploadForm();
             });
-
-            renderFiles();
+          });
         }
+      );
+    });
 
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-        }
+    function resetUploadForm() {
+      uploadForm.reset();
+      progressContainer.style.display = 'none';
+      progressBar.style.width = '0%';
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = `<i class="fa-solid fa-upload"></i> Subir Archivo`;
+    }
 
-        // Eventos Drag & Drop
-        const dropZone = document.getElementById('file-container');
+    // Escuchar cambios en Firestore en tiempo real (Sincronizado para todos)
+    db.collection("documentos").orderBy("createdAt", "desc")
+      .onSnapshot((snapshot) => {
+        allDocs = [];
+        snapshot.forEach((doc) => {
+          allDocs.push({ id: doc.id, ...doc.data() });
+        });
+        renderTable(allDocs);
+      }, (error) => {
+        console.error("Error al obtener documentos: ", error);
+      });
+
+    // Renderizar la tabla de archivos
+    function renderTable(docs) {
+      docsTableBody.innerHTML = '';
+
+      if (docs.length === 0) {
+        emptyMessage.style.display = 'block';
+        return;
+      }
+
+      emptyMessage.style.display = 'none';
+
+      docs.forEach((doc) => {
+        const tr = document.createElement('tr');
         
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, e => {
-                e.preventDefault();
-                e.stopPropagation();
-            }, false);
-        });
+        // Formato de fecha
+        let dateStr = 'Reciente';
+        if (doc.createdAt) {
+          const date = doc.createdAt.toDate();
+          dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
 
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over'), false);
-        });
+        // Ícono según tipo
+        let icon = 'fa-file';
+        if (doc.name.endsWith('.pdf')) icon = 'fa-file-pdf';
+        else if (doc.name.endsWith('.xls') || doc.name.endsWith('.xlsx')) icon = 'fa-file-excel';
+        else if (doc.name.endsWith('.doc') || doc.name.endsWith('.docx')) icon = 'fa-file-word';
+        else if (doc.name.match(/\.(jpg|jpeg|png|gif)$/i)) icon = 'fa-file-image';
 
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'), false);
-        });
+        tr.innerHTML = `
+          <td><i class="fa-regular ${icon}" style="color: var(--fedex-purple); margin-right: 8px;"></i> <strong>${doc.name}</strong></td>
+          <td><span class="badge">${doc.category || 'General'}</span></td>
+          <td>${formatBytes(doc.size || 0)}</td>
+          <td>${dateStr}</td>
+          <td>
+            <div class="actions">
+              <a href="${doc.url}" target="_blank" class="btn-action btn-download">
+                <i class="fa-solid fa-download"></i> Abrir
+              </a>
+              <button onclick="deleteDocument('${doc.id}', '${doc.storagePath}')" class="btn-action btn-delete">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        `;
+        docsTableBody.appendChild(tr);
+      });
+    }
 
-        dropZone.addEventListener('drop', e => {
-            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                addFiles(e.dataTransfer.files);
-            }
-        });
+    // Eliminar documento (Storage + Firestore)
+    window.deleteDocument = function(docId, storagePath) {
+      if (confirm('¿Estás seguro de que deseas eliminar este documento para todos los usuarios?')) {
+        // Eliminar de Storage
+        storage.ref(storagePath).delete().catch(err => console.warn("Archivo físico no encontrado en Storage:", err));
+        
+        // Eliminar de Firestore
+        db.collection("documentos").doc(docId).delete()
+          .then(() => alert("Documento eliminado correctamente."))
+          .catch(err => alert("Error al eliminar: " + err.message));
+      }
+    };
 
-        // Cargar vista inicial
-        renderFiles();
-    </script>
+    // Filtrar tabla por búsqueda o categoría
+    window.filterTable = function() {
+      const searchVal = document.getElementById('searchInput').value.toLowerCase();
+      const catVal = document.getElementById('filterCategory').value;
+
+      const filtered = allDocs.filter(doc => {
+        const matchesName = doc.name.toLowerCase().includes(searchVal);
+        const matchesCat = (catVal === 'ALL') || (doc.category === catVal);
+        return matchesName && matchesCat;
+      });
+
+      renderTable(filtered);
+    };
+  </script>
 </body>
 </html>
