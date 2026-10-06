@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FedEx - Portal de Gestión Documental</title>
+  <title>FedEx - SGD (Sistema de Gestión Documental de Procesos)</title>
   
   <!-- Firebase SDKs (Compatibilidad Web) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -61,8 +61,11 @@
 
     .sub-title {
       font-size: 14px;
-      font-weight: 400;
-      opacity: 0.9;
+      font-weight: 500;
+      opacity: 0.95;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     /* Container */
@@ -296,38 +299,39 @@
 </head>
 <body>
 
-  <!-- Header estilo FedEx -->
+  <!-- Header SGD estilo FedEx -->
   <header>
     <div class="logo">Fed<span>Ex</span></div>
-    <div class="sub-title"><i class="fa-solid fa-folder-open"></i> Portal de Gestión Documental</div>
+    <div class="sub-title"><i class="fa-solid fa-sitemap"></i> SGD - Sistema de Gestión Documental</div>
   </header>
 
   <div class="main-container">
     
-    <!-- Subir Archivo -->
+    <!-- Subir Archivo de Procesos -->
     <div class="upload-card">
-      <h2><i class="fa-solid fa-cloud-arrow-up"></i> Cargar Nuevo Documento</h2>
+      <h2><i class="fa-solid fa-cloud-arrow-up"></i> Cargar Documentación de Procesos</h2>
       <form id="uploadForm" class="form-grid">
         
         <div class="form-group">
-          <label for="docCategory">Categoría / Carpeta</label>
+          <label for="docCategory">Tipo de Documento / Proceso</label>
           <select id="docCategory" required>
-            <option value="Manifiestos">Manifiestos</option>
-            <option value="Facturas">Facturas de Envío</option>
-            <option value="Guías">Guías de Rastreo</option>
-            <option value="Aduanas">Documentos de Aduana</option>
-            <option value="General" selected>General</option>
+            <option value="Manuales de Puestos">Manuales de Puestos</option>
+            <option value="Flujos BPMN">Flujos de Proceso (BPMN)</option>
+            <option value="Procedimientos (SOP)">Procedimientos (SOP)</option>
+            <option value="Políticas y Normativas">Políticas y Normativas</option>
+            <option value="Instructivos y Formatos">Instructivos y Formatos</option>
+            <option value="General" selected>General / Otros</option>
           </select>
         </div>
 
         <div class="form-group">
-          <label for="docFile">Archivo (PDF, Excel, Word, Imagen)</label>
+          <label for="docFile">Archivo (.BPMN, .PDF, .Word, .Visio, .Excel)</label>
           <input type="file" id="docFile" required>
         </div>
 
         <div class="form-group">
           <button type="submit" id="btnSubmit" class="btn-upload">
-            <i class="fa-solid fa-upload"></i> Subir Archivo
+            <i class="fa-solid fa-upload"></i> Subir Documento
           </button>
         </div>
 
@@ -338,19 +342,20 @@
       </div>
     </div>
 
-    <!-- Lista de Documentos -->
+    <!-- Lista de Documentos SGD -->
     <div class="docs-section">
       <div class="docs-header">
-        <h2>Documentos Disponibles</h2>
+        <h2>Repositorio de Procesos y Estructura</h2>
         <div class="filter-controls">
-          <input type="text" id="searchInput" placeholder="Buscar por nombre..." onkeyup="filterTable()">
+          <input type="text" id="searchInput" placeholder="Buscar documento o puesto..." onkeyup="filterTable()">
           <select id="filterCategory" onchange="filterTable()">
             <option value="ALL">Todas las Categorías</option>
-            <option value="Manifiestos">Manifiestos</option>
-            <option value="Facturas">Facturas</option>
-            <option value="Guías">Guías</option>
-            <option value="Aduanas">Aduanas</option>
-            <option value="General">General</option>
+            <option value="Manuales de Puestos">Manuales de Puestos</option>
+            <option value="Flujos BPMN">Flujos BPMN</option>
+            <option value="Procedimientos (SOP)">Procedimientos (SOP)</option>
+            <option value="Políticas y Normativas">Políticas y Normativas</option>
+            <option value="Instructivos y Formatos">Instructivos y Formatos</option>
+            <option value="General">General / Otros</option>
           </select>
         </div>
       </div>
@@ -359,20 +364,20 @@
         <table>
           <thead>
             <tr>
-              <th>Documento</th>
-              <th>Categoría</th>
+              <th>Documento / Archivo</th>
+              <th>Tipo de Documento</th>
               <th>Tamaño</th>
               <th>Fecha de Carga</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody id="docsTableBody">
-            <!-- Los archivos se cargan aquí dinámicamente -->
+            <!-- Los documentos cargados en Firebase aparecen aquí -->
           </tbody>
         </table>
         <div id="emptyMessage" class="empty-msg" style="display: none;">
-          <i class="fa-solid fa-box-open"></i>
-          <p>No hay documentos registrados actualmente.</p>
+          <i class="fa-solid fa-folder-open"></i>
+          <p>No hay documentos registrados en el repositorio de SGD actualmente.</p>
         </div>
       </div>
     </div>
@@ -380,7 +385,7 @@
   </div>
 
   <footer>
-    &copy; FedEx Document Management System - Servidor de almacenamiento dinámico.
+    &copy; FedEx SGD - Sistema de Gestión Documental de Procesos y Estructura Organizacional.
   </footer>
 
   <script>
@@ -400,7 +405,7 @@
     const db = firebase.firestore();
     const storage = firebase.storage();
 
-    // DOM Elements
+    // Elementos DOM
     const uploadForm = document.getElementById('uploadForm');
     const docFileInput = document.getElementById('docFile');
     const docCategoryInput = document.getElementById('docCategory');
@@ -435,8 +440,8 @@
       btnSubmit.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Subiendo...`;
       progressContainer.style.display = 'block';
 
-      // Crear referencia en Storage
-      const storagePath = `documentos/${Date.now()}_${file.name}`;
+      // Ruta única en Storage
+      const storagePath = `sgd_procesos/${Date.now()}_${file.name}`;
       const storageRef = storage.ref(storagePath);
       const uploadTask = storageRef.put(file);
 
@@ -446,14 +451,14 @@
           progressBar.style.width = progress + '%';
         }, 
         (error) => {
-          alert('Error al subir el archivo: ' + error.message + '\n\nAsegúrate de haber activado Firebase Storage en modo de prueba.');
+          alert('Error al subir el archivo: ' + error.message + '\n\nRevisa que hayas habilitado Firestore y Storage en modo de prueba.');
           resetUploadForm();
         }, 
         () => {
-          // Obtener URL pública
+          // Obtener URL de descarga pública
           uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
-            // Guardar registro en Firestore Database
-            db.collection("documentos").add({
+            // Guardar registro en Firestore
+            db.collection("documentos_sgd").add({
               name: file.name,
               category: category,
               size: file.size,
@@ -461,10 +466,10 @@
               storagePath: storagePath,
               createdAt: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
-              alert('¡Documento subido correctamente!');
+              alert('¡Documento de procesos subido con éxito!');
               resetUploadForm();
             }).catch(err => {
-              alert('Error al guardar en la base de datos: ' + err.message);
+              alert('Error al guardar registro: ' + err.message);
               resetUploadForm();
             });
           });
@@ -477,11 +482,11 @@
       progressContainer.style.display = 'none';
       progressBar.style.width = '0%';
       btnSubmit.disabled = false;
-      btnSubmit.innerHTML = `<i class="fa-solid fa-upload"></i> Subir Archivo`;
+      btnSubmit.innerHTML = `<i class="fa-solid fa-upload"></i> Subir Documento`;
     }
 
-    // Escuchar cambios en Firestore en tiempo real (Sincronizado para todos)
-    db.collection("documentos").orderBy("createdAt", "desc")
+    // Escuchar cambios en Firestore en tiempo real
+    db.collection("documentos_sgd").orderBy("createdAt", "desc")
       .onSnapshot((snapshot) => {
         allDocs = [];
         snapshot.forEach((doc) => {
@@ -489,10 +494,10 @@
         });
         renderTable(allDocs);
       }, (error) => {
-        console.error("Error al obtener documentos: ", error);
+        console.error("Error al obtener los documentos SGD: ", error);
       });
 
-    // Renderizar la tabla de archivos
+    // Renderizar la tabla de documentos
     function renderTable(docs) {
       docsTableBody.innerHTML = '';
 
@@ -506,29 +511,30 @@
       docs.forEach((doc) => {
         const tr = document.createElement('tr');
         
-        // Formato de fecha
         let dateStr = 'Reciente';
         if (doc.createdAt) {
           const date = doc.createdAt.toDate();
           dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         }
 
-        // Ícono según tipo
-        let icon = 'fa-file';
-        if (doc.name.endsWith('.pdf')) icon = 'fa-file-pdf';
-        else if (doc.name.endsWith('.xls') || doc.name.endsWith('.xlsx')) icon = 'fa-file-excel';
-        else if (doc.name.endsWith('.doc') || doc.name.endsWith('.docx')) icon = 'fa-file-word';
-        else if (doc.name.match(/\.(jpg|jpeg|png|gif)$/i)) icon = 'fa-file-image';
+        // Íconos según extensión (BPMN, Visio, PDF, Word, Excel, etc.)
+        const lowerName = doc.name.toLowerCase();
+        let icon = 'fa-file-lines';
+        if (lowerName.endsWith('.pdf')) icon = 'fa-file-pdf';
+        else if (lowerName.endsWith('.bpm') || lowerName.endsWith('.bpmn') || lowerName.endsWith('.vsdx') || lowerName.endsWith('.drawio')) icon = 'fa-diagram-project';
+        else if (lowerName.endsWith('.xls') || lowerName.endsWith('.xlsx')) icon = 'fa-file-excel';
+        else if (lowerName.endsWith('.doc') || lowerName.endsWith('.docx')) icon = 'fa-file-word';
+        else if (lowerName.match(/\.(jpg|jpeg|png|gif|svg)$/)) icon = 'fa-file-image';
 
         tr.innerHTML = `
-          <td><i class="fa-regular ${icon}" style="color: var(--fedex-purple); margin-right: 8px;"></i> <strong>${doc.name}</strong></td>
+          <td><i class="fa-solid ${icon}" style="color: var(--fedex-purple); margin-right: 8px;"></i> <strong>${doc.name}</strong></td>
           <td><span class="badge">${doc.category || 'General'}</span></td>
           <td>${formatBytes(doc.size || 0)}</td>
           <td>${dateStr}</td>
           <td>
             <div class="actions">
               <a href="${doc.url}" target="_blank" class="btn-action btn-download">
-                <i class="fa-solid fa-download"></i> Abrir
+                <i class="fa-solid fa-download"></i> Descargar / Ver
               </a>
               <button onclick="deleteDocument('${doc.id}', '${doc.storagePath}')" class="btn-action btn-delete">
                 <i class="fa-solid fa-trash"></i>
@@ -540,20 +546,18 @@
       });
     }
 
-    // Eliminar documento (Storage + Firestore)
+    // Eliminar documento de Firebase
     window.deleteDocument = function(docId, storagePath) {
-      if (confirm('¿Estás seguro de que deseas eliminar este documento para todos los usuarios?')) {
-        // Eliminar de Storage
-        storage.ref(storagePath).delete().catch(err => console.warn("Archivo físico no encontrado en Storage:", err));
+      if (confirm('¿Deseas eliminar este documento del SGD para todos los usuarios?')) {
+        storage.ref(storagePath).delete().catch(err => console.warn("Archivo físico no encontrado:", err));
         
-        // Eliminar de Firestore
-        db.collection("documentos").doc(docId).delete()
+        db.collection("documentos_sgd").doc(docId).delete()
           .then(() => alert("Documento eliminado correctamente."))
           .catch(err => alert("Error al eliminar: " + err.message));
       }
     };
 
-    // Filtrar tabla por búsqueda o categoría
+    // Filtros de búsqueda
     window.filterTable = function() {
       const searchVal = document.getElementById('searchInput').value.toLowerCase();
       const catVal = document.getElementById('filterCategory').value;
