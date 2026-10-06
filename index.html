@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión Documental - FedEx</title>
+    <style>
+        :root {
+            --fedex-purple: #4D148C;
+            --fedex-orange: #FF6600;
+            --bg-color: #F3F4F6;
+            --sidebar-bg: #FFFFFF;
+            --text-main: #333333;
+            --text-muted: #6B7280;
+            --border-color: #E5E7EB;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Top Header */
+        .header {
+            background-color: var(--fedex-purple);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+
+        .header h1 {
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        /* Layout */
+        .app-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 15px;
+            background-color: #f9fafb;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: bold;
+            color: var(--fedex-purple);
+        }
+
+        .folder-group {
+            margin-bottom: 5px;
+        }
+
+        .folder-title {
+            padding: 12px 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .folder-title:hover {
+            background-color: #f3f4f6;
+        }
+
+        .folder-title::before {
+            content: '📁';
+            margin-right: 10px;
+            font-size: 1.1em;
+        }
+
+        .subfolders {
+            display: none;
+            list-style: none;
+            background-color: #fafafa;
+        }
+
+        .subfolders.active {
+            display: block;
+        }
+
+        .subfolder-item {
+            padding: 10px 15px 10px 40px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .subfolder-item:hover {
+            background-color: #f0f0f0;
+            color: var(--text-main);
+        }
+
+        .subfolder-item.active {
+            background-color: #fff0e6;
+            color: var(--fedex-orange);
+            border-left: 3px solid var(--fedex-orange);
+            font-weight: 600;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .toolbar {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .toolbar-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .breadcrumb {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .breadcrumb span {
+            color: var(--fedex-orange);
+            font-weight: bold;
+        }
+
+        .btn {
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .btn-upload {
+            background-color: var(--fedex-orange);
+            color: white;
+        }
+
+        .btn-upload:hover {
+            background-color: #e65c00;
+        }
+
+        /* File List & Drag Drop Area */
+        .file-list {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            flex: 1;
+            min-height: 300px;
+            border: 2px dashed transparent;
+            transition: all 0.2s;
+        }
+
+        .file-list.drag-over {
+            border-color: var(--fedex-orange);
+            background-color: #fffaf5;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.2s;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .file-item:hover {
+            background-color: #f9fafb;
+        }
+
+        .file-icon {
+            font-size: 1.5rem;
+            margin-right: 15px;
+        }
+
+        .file-details {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 500;
+            color: var(--fedex-purple);
+            text-decoration: none;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .file-meta {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .btn-delete {
+            background: none;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 5px 10px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state p {
+            margin-top: 10px;
+        }
+
+        .cloud-icon {
+            font-size: 4rem;
+            color: #d1d5db;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <h1>Gestión Documental</h1>
+        <div>Portal Interno</div>
+    </header>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                Carpetas
+            </div>
+            
+            <!-- Departamento 1: Operaciones -->
+            <div class="folder-group">
+                <div class="folder-title" onclick="toggleFolder('ops')">1. Operaciones</div>
+                <ul class="subfolders active" id="ops">
+                    <li class="subfolder-item active" onclick="selectFolder(this, 'Operaciones', 'Manuales de Puestos')">Manuales de Puestos</li>
+                    <li class="subfolder-item" onclick="selectFolder(this, 'Operaciones', 'Flujos de Procesos')">Flujos de Procesos</li>
+                    <li class="subfolder-item" onclick="selectFolder(this, 'Operaciones', 'Auditorías y Control')">Auditorías y Control</li>
+                </ul>
+            </div>
+
+            <!-- Departamento 2: Servicio al Cliente -->
+            <div class="folder-group">
+                <div class="folder-title" onclick="toggleFolder('cx')">2. Servicio al Cliente</div>
+                <ul class="subfolders" id="cx">
+                    <li class="subfolder-item active" onclick="selectFolder(this, 'Operaciones', 'Manuales de Puestos')">Manuales de Puestos</li>
+                    <li class="subfolder-item" onclick="selectFolder(this, 'Operaciones', 'Flujos de Procesos')">Flujos de Procesos</li>
+                    <li class="subfolder-item" onclick="selectFolder(this, 'Operaciones', 'Auditorías y Control')">Auditorías y Control</li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div class="toolbar">
+                <div class="breadcrumb" id="breadcrumb">
+                    Operaciones > <span>Manuales de Puestos</span>
+                </div>
+                <div class="toolbar-actions">
+                    <button class="btn btn-upload" onclick="triggerFileInput()">↑ Subir Documento</button>
+                    <input type="file" id="file-input" multiple style="display: none;" onchange="handleFileSelect(event)">
+                </div>
+            </div>
+
+            <div class="file-list" id="file-container">
+                <!-- Los archivos dinámicos se renderizan aquí -->
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // === ALMACENAMIENTO DE DATOS EN MEMORIA ===
+        let currentDept = 'Operaciones';
+        let currentFolder = 'Manuales de Puestos';
+
+        const db = {
+            'Operaciones_Manuales de Puestos': [
+                { name: 'Manual_Operador_Logistico_v2.pdf', date: '2023-10-24', size: '2.4 MB', type: 'PDF', icon: '📄' },
+                { name: 'Matriz_Riesgos_Almacen.xlsx', date: '2023-11-15', size: '1.1 MB', type: 'Excel', icon: '📊' }
+            ]
+        };
+
+        function getStorageKey() {
+            return `${currentDept}_${currentFolder}`;
+        }
+
+        function escapeHtml(str) {
+            return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // === CONTROL DE NAVEGACIÓN ===
+        function toggleFolder(id) {
+            const folder = document.getElementById(id);
+            folder.classList.toggle('active');
+        }
+
+        function selectFolder(element, departamento, subcarpeta) {
+            document.querySelectorAll('.subfolder-item').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+            
+            currentDept = departamento;
+            currentFolder = subcarpeta;
+            
+            document.getElementById('breadcrumb').innerHTML = `${departamento} > <span>${subcarpeta}</span>`;
+            renderFiles();
+        }
+
+        // === RENDERIZADO DE ARCHIVOS ===
+        function renderFiles() {
+            const container = document.getElementById('file-container');
+            const key = getStorageKey();
+            const files = db[key] || [];
+
+            if (files.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="cloud-icon">☁️</div>
+                        <p>Arrastra tus archivos de <b>${currentFolder}</b> aquí o haz clic en Subir Documento.</p>
+                        <p style="font-size: 0.85rem; margin-top:5px;">(Formatos recomendados: PDF, XLSX, DOCX)</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = files.map((file, idx) => `
+                <div class="file-item">
+                    <div class="file-icon">${file.icon}</div>
+                    <div class="file-details">
+                        <a href="#" class="file-name">${escapeHtml(file.name)}</a>
+                        <div class="file-meta">Modificado: ${file.date} • ${file.type} • ${file.size}</div>
+                    </div>
+                    <button class="btn-delete" title="Eliminar" onclick="deleteFile(${idx})">🗑️</button>
+                </div>
+            `).join('');
+        }
+
+        function deleteFile(index) {
+            const key = getStorageKey();
+            if (db[key]) {
+                db[key].splice(index, 1);
+                renderFiles();
+            }
+        }
+
+        // === GESTIÓN DE CARGA (BUTTON & DRAG AND DROP) ===
+        function triggerFileInput() {
+            document.getElementById('file-input').click();
+        }
+
+        function handleFileSelect(event) {
+            addFiles(event.target.files);
+            event.target.value = '';
+        }
+
+        function addFiles(fileList) {
+            const key = getStorageKey();
+            if (!db[key]) db[key] = [];
+
+            Array.from(fileList).forEach(file => {
+                const ext = file.name.split('.').pop().toLowerCase();
+                let icon = '📄';
+                let type = 'Documento';
+
+                if (['xlsx', 'xls', 'csv'].includes(ext)) { icon = '📊'; type = 'Excel'; }
+                else if (['pdf'].includes(ext)) { icon = '📕'; type = 'PDF'; }
+                else if (['doc', 'docx'].includes(ext)) { icon = '📘'; type = 'Word'; }
+                else if (['png', 'jpg', 'jpeg'].includes(ext)) { icon = '🖼️'; type = 'Imagen'; }
+
+                db[key].push({
+                    name: file.name,
+                    date: new Date().toISOString().split('T')[0],
+                    size: formatFileSize(file.size),
+                    type: type,
+                    icon: icon
+                });
+            });
+
+            renderFiles();
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        // Eventos Drag & Drop
+        const dropZone = document.getElementById('file-container');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, e => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'), false);
+        });
+
+        dropZone.addEventListener('drop', e => {
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                addFiles(e.dataTransfer.files);
+            }
+        });
+
+        // Cargar vista inicial
+        renderFiles();
+    </script>
+</body>
+</html>
